@@ -185,6 +185,22 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                 📄 {capture.ide_file_path}
                             </p>
                         )}
+
+                        {/* Text preview — shown collapsed so user can see what was saved */}
+                        {capture.text_content && (
+                            <p style={{
+                                fontSize: '0.75rem',
+                                color: '#94A3B8',
+                                marginTop: '0.3rem',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                lineHeight: 1.5,
+                            }}>
+                                {capture.text_content.slice(0, 180)}{capture.text_content.length > 180 ? '…' : ''}
+                            </p>
+                        )}
                     </div>
 
                     {/* Delete btn */}
@@ -222,18 +238,39 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                 {imageAttachments && imageAttachments.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
                         {imageAttachments.map((att) => (
-                            <img
+                            <a
                                 key={att.id}
-                                src={att.s3_url}
-                                alt={att.file_name}
+                                href={att.s3_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                title={att.file_name}
                                 style={{
-                                    width: '80px',
-                                    height: '50px',
-                                    objectFit: 'cover',
+                                    display: 'inline-block',
                                     borderRadius: '4px',
+                                    overflow: 'hidden',
                                     border: '1px solid #334155',
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
                                 }}
-                            />
+                            >
+                                <img
+                                    src={att.s3_url}
+                                    alt={att.file_name}
+                                    style={{
+                                        width: '80px',
+                                        height: '50px',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                    }}
+                                    onError={(e) => {
+                                        const img = e.currentTarget;
+                                        img.style.background = '#1E293B';
+                                        img.style.display = 'flex';
+                                        img.alt = '⚠ Unavailable';
+                                    }}
+                                />
+                            </a>
                         ))}
                     </div>
                 )}
@@ -260,6 +297,39 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                 >
                                     {capture.ide_code_diff}
                                 </SyntaxHighlighter>
+                            </div>
+                        )}
+
+                        {/* Text content — note body / web chunk / video transcript */}
+                        {capture.text_content && (
+                            <div style={{ marginBottom: '0.5rem' }}>
+                                <p style={{
+                                    fontSize: '0.65rem',
+                                    color: '#64748B',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    marginBottom: '0.3rem',
+                                }}>
+                                    Content
+                                </p>
+                                <pre style={{
+                                    fontSize: '0.78rem',
+                                    color: '#CBD5E1',
+                                    background: '#0A0F1E',
+                                    border: '1px solid #243044',
+                                    borderRadius: '6px',
+                                    padding: '0.6rem 0.75rem',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    margin: 0,
+                                    fontFamily: 'inherit',
+                                    lineHeight: 1.6,
+                                }}>
+                                    {capture.text_content}
+                                </pre>
                             </div>
                         )}
 
@@ -431,7 +501,7 @@ function ChatMessage({ msg }: { msg: Message }) {
                             Sources:
                         </span>
                         {msg.sources.map((src, i) => {
-                            const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(src);
+                            const isImage = /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(src);
                             return isImage ? (
                                 <img
                                     key={i}
