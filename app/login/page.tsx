@@ -146,7 +146,7 @@ export default function LoginPage() {
                     </span>
                 </div>
                 <p style={{ color: '#64748B', fontSize: '0.85rem', fontFamily: 'JetBrains Mono, monospace' }}>
-                    your AI context engine
+                    your personal knowledge AI
                 </p>
             </div>
 
@@ -189,8 +189,8 @@ export default function LoginPage() {
                 </h1>
                 <p style={{ color: '#64748B', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
                     {mode === 'signin'
-                        ? 'Sign in to your MindStack workspace'
-                        : 'Start capturing your context today'}
+                        ? 'Sign in to your MindStack account'
+                        : 'Start building your knowledge base today'}
                 </p>
 
                 {error && (

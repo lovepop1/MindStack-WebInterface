@@ -82,6 +82,15 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         RESOURCE_UPLOAD: '📎',
     };
 
+    const typeLabels: Record<string, string> = {
+        WEB_TEXT: 'Web Page',
+        USER_NOTE: 'Note',
+        IDE_BUG_FIX: 'Bug Fix',
+        IDE_PROGRESS_SNAPSHOT: 'Code Snapshot',
+        VIDEO_SEGMENT: 'Video',
+        RESOURCE_UPLOAD: 'File Upload',
+    };
+
     const color = typeColors[capture.capture_type] ?? '#64748B';
     const icon = typeIcons[capture.capture_type] ?? '📌';
     const isCode = capture.capture_type === 'IDE_BUG_FIX' || capture.capture_type === 'IDE_PROGRESS_SNAPSHOT';
@@ -152,7 +161,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                 letterSpacing: '0.05em',
                             }}
                         >
-                            {capture.capture_type}
+                            {typeLabels[capture.capture_type] ?? capture.capture_type}
                         </span>
 
                         {/* Title / snippet */}
@@ -182,7 +191,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                     <button
                         id={`delete-capture-${capture.id}`}
                         onClick={handleDelete}
-                        aria-label="Delete capture"
+                        aria-label="Delete item"
                         style={{
                             background: 'transparent',
                             border: '1px solid transparent',
@@ -755,10 +764,10 @@ export default function ProjectPage() {
                                 textTransform: 'uppercase',
                             }}
                         >
-                            📡 Context Archive
+                            📚 Saved Items
                         </h2>
                         <p style={{ fontSize: '0.7rem', color: '#475569', marginTop: '0.1rem' }}>
-                            {captures.length} capture{captures.length !== 1 ? 's' : ''}
+                            {captures.length} item{captures.length !== 1 ? 's' : ''}
                         </p>
                     </div>
 
@@ -804,9 +813,9 @@ export default function ProjectPage() {
                                 color: '#475569',
                             }}
                         >
-                            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>👻</div>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📥</div>
                             <p style={{ fontSize: '0.8rem', lineHeight: 1.6, color: '#4A5568' }}>
-                                The Ghost is waiting. Use your browser or IDE extension to capture your first piece of context.
+                                Nothing here yet. Use the Browser or Editor Assistant to save your first item.
                             </p>
                         </div>
                     )}
@@ -864,10 +873,10 @@ export default function ProjectPage() {
                                 textTransform: 'uppercase',
                             }}
                         >
-                            🤖 RAG Query Engine
+                            🤖 MindStack Assistant
                         </h2>
                         <p style={{ fontSize: '0.7rem', color: '#475569', marginTop: '0.1rem' }}>
-                            Powered by Claude 3.7 · Context resets on refresh
+                            Powered by Claude 3.7 · Conversation resets on refresh
                         </p>
                     </div>
 
@@ -934,10 +943,10 @@ export default function ProjectPage() {
                                 🧠
                             </div>
                             <h3 style={{ fontSize: '1rem', fontWeight: 500, color: '#4A5568', marginBottom: '0.5rem' }}>
-                                Query your captured context
+                                Ask MindStack anything
                             </h3>
                             <p style={{ fontSize: '0.8rem', color: '#334155', maxWidth: '350px', lineHeight: 1.6 }}>
-                                Ask anything about your saved captures. MindStack will retrieve the most relevant context and answer using Claude.
+                                Ask questions about everything you&apos;ve saved. MindStack finds the most relevant information and answers for you.
                             </p>
                             <div
                                 style={{
@@ -949,9 +958,9 @@ export default function ProjectPage() {
                                 }}
                             >
                                 {[
-                                    'Summarize my recent web captures',
+                                    "Summarize what I've saved recently",
                                     'What bugs did I fix this week?',
-                                    'Show me code diffs from yesterday',
+                                    'What did I work on yesterday?',
                                 ].map((suggestion) => (
                                     <button
                                         key={suggestion}
@@ -1011,7 +1020,7 @@ export default function ProjectPage() {
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             disabled={streaming}
-                            placeholder="Ask a question about your captured context… (Enter to send)"
+                            placeholder="Ask a question about your saved items… (Enter to send)"
                             rows={1}
                             style={{
                                 flex: 1,
@@ -1077,7 +1086,7 @@ export default function ProjectPage() {
                         </button>
                     </div>
                     <p style={{ fontSize: '0.68rem', color: '#334155', marginTop: '0.4rem', textAlign: 'center' }}>
-                        Shift+Enter for new line · Enter to send · Chat history resets on refresh
+                        Shift+Enter for new line · Enter to send · Conversation resets on refresh
                     </p>
                 </div>
             </div>

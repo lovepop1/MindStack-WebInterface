@@ -133,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }}
             >
                 <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontFamily: 'JetBrains Mono, monospace' }}>
-                    👻 Install your tracking ghosts:
+                    ✨ Get the MindStack Assistants:
                 </span>
                 <a
                     href="https://chrome.google.com/webstore"
@@ -156,7 +156,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         (e.target as HTMLAnchorElement).style.background = 'transparent';
                     }}
                 >
-                    🌐 Chrome Extension
+                    🌐 Browser Assistant
                 </a>
                 <a
                     href="https://marketplace.visualstudio.com"
@@ -179,7 +179,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         (e.target as HTMLAnchorElement).style.background = 'transparent';
                     }}
                 >
-                    ⬡ VS Code Extension
+                    ⬡ Editor Assistant
                 </a>
             </div>
 

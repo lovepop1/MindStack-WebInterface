@@ -102,10 +102,10 @@ export default function DashboardPage() {
                             letterSpacing: '-0.02em',
                         }}
                     >
-                        Project Workspaces
+                        My Projects
                     </h1>
                     <p style={{ color: '#64748B', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                        Select a project to query your captured context
+                        Select a project to open it and start asking questions
                     </p>
                 </div>
 
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                         Welcome to MindStack.
                     </h2>
                     <p style={{ color: '#475569', maxWidth: '400px', margin: '0 auto 1.75rem', lineHeight: 1.6 }}>
-                        Create your first project workspace to begin capturing and querying your context.
+                        Create your first project to start saving things and asking questions about them.
                     </p>
                     <button
                         onClick={() => setShowModal(true)}
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                             boxShadow: '0 4px 16px rgba(14,165,233,0.25)',
                         }}
                     >
-                        Create your first workspace →
+                        Create your first project →
                     </button>
                 </div>
             )}
@@ -326,10 +326,10 @@ export default function DashboardPage() {
                         }}
                     >
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#F1F5F9', marginBottom: '0.25rem' }}>
-                            New Project Workspace
+                            New Project
                         </h2>
                         <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                            Your captures will be organised within this workspace.
+                            Everything you save will be organized inside this project.
                         </p>
 
                         {modalError && (
@@ -439,7 +439,7 @@ export default function DashboardPage() {
                                         cursor: creating ? 'not-allowed' : 'pointer',
                                     }}
                                 >
-                                    {creating ? 'Creating...' : 'Create Workspace'}
+                                    {creating ? 'Creating...' : 'Create Project'}
                                 </button>
                             </div>
                         </form>
