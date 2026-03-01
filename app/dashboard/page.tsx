@@ -82,6 +82,7 @@ export default function DashboardPage() {
 
     return (
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+
             {/* Header */}
             <div
                 style={{
