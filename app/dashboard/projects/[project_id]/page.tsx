@@ -258,8 +258,8 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                     src={att.s3_url}
                                     alt={att.file_name}
                                     style={{
-                                        width: '80px',
-                                        height: '50px',
+                                        width: '160px',
+                                        height: '100px',
                                         objectFit: 'cover',
                                         display: 'block',
                                     }}
@@ -554,6 +554,24 @@ function ChatMessage({ msg }: { msg: Message }) {
                 >
                     <ReactMarkdown
                         components={{
+                            img({ src, alt }) {
+                                return (
+                                    <a href={src} target="_blank" rel="noopener noreferrer" style={{ display: 'block', margin: '0.75rem 0' }}>
+                                        <img
+                                            src={src}
+                                            alt={alt}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '400px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #334155',
+                                                objectFit: 'contain',
+                                                backgroundColor: '#0F172A'
+                                            }}
+                                        />
+                                    </a>
+                                );
+                            },
                             code({ className, children, ...props }) {
                                 const match = /language-(\w+)/.exec(className || '');
                                 const isInline = !className;
