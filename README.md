@@ -11,7 +11,7 @@ This repository contains the **Next.js Web Interface** for MindStack. It is the 
 MindStack consists of four core components working together to build your personal knowledge graph. This repository is part 1 of 4:
 
 1. **[This Repo] Web Interface (Frontend)** – The Next.js dashboard and chat UI.
-2. **[Backend API Repository](#link-to-backend-repo)** – The Next.js App Router providing RAG, Vector Search, and AWS Bedrock integration.
+2. **[Backend API Repository](#https://github.com/lovepop1/MindStack)** – The Next.js App Router providing RAG, Vector Search, and AWS Bedrock integration.
 3. **[Browser Ghost Extension](#link-to-browser-extension-repo)** – The Chrome extension that silently captures your web pages, videos, and research.
 4. **[Editor Ghost Extension](#link-to-ide-extension-repo)** – The VS Code extension that captures your code states, bug fixes, and development progress.
 
