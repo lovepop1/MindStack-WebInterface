@@ -962,7 +962,7 @@ export default function ProjectPage() {
                             🤖 MindStack Assistant
                         </h2>
                         <p style={{ fontSize: '0.7rem', color: '#475569', marginTop: '0.1rem' }}>
-                            Powered by Claude 3.7 · Conversation resets on refresh
+                            Powered by Claude Sonnet 4.6 · Conversation resets on refresh
                         </p>
                     </div>
 
