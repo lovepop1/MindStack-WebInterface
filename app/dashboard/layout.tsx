@@ -34,14 +34,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Topbar */}
             <nav
                 style={{
-                    height: '56px',
+                    minHeight: '56px',
                     background: 'rgba(13, 21, 38, 0.95)',
                     backdropFilter: 'blur(8px)',
                     borderBottom: '1px solid #1E293B',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0 1.5rem',
+                    padding: '0.5rem 1.5rem',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
                     position: 'sticky',
                     top: 0,
                     zIndex: 50,

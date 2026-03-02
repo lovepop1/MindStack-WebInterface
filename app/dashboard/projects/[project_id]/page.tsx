@@ -812,11 +812,9 @@ export default function ProjectPage() {
 
     return (
         <div
+            className="split-pane"
             style={{
                 height: 'calc(100vh - 100px)',
-                display: 'grid',
-                gridTemplateColumns: '360px 1fr',
-                overflow: 'hidden',
                 borderTop: '1px solid #1E293B',
             }}
         >

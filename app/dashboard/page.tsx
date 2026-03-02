@@ -137,7 +137,7 @@ export default function DashboardPage() {
 
             {/* Loading */}
             {loading && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="skeleton" style={{ height: '140px', borderRadius: '12px' }} />
                     ))}
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 <div
                     style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
                         gap: '1.25rem',
                     }}
                 >
