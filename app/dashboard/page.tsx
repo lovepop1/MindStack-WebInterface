@@ -68,13 +68,10 @@ export default function DashboardPage() {
 
     const fetchWorkspaces = useCallback(async () => {
             try {
-                // FIX: Added { cache: 'no-store' } to bust the Next.js router cache
-                const res = await apiFetch(`${API_BASE}/api/workspaces`, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
+                // THE NUCLEAR CACHE BUSTER: Append a timestamp query parameter
+                const timestamp = new Date().getTime();
+                const res = await apiFetch(`${API_BASE}/api/workspaces?_t=${timestamp}`, {
+                    cache: 'no-store'
                 });
                 
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
