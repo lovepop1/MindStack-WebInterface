@@ -19,30 +19,34 @@ export async function GET(
         // Query captures table where workspace_id = workspaceId
         // Include author_display_name and all existing fields
         
-        // Example response structure:
-        const captures = [
-            // {
-            //     id: string,
-            //     capture_type: string,
-            //     source_url: string | null,
-            //     page_title: string | null,
-            //     text_content: string | null,
-            //     ide_code_diff: string | null,
-            //     ide_error_log: string | null,
-            //     ide_file_path: string | null,
-            //     ai_markdown_summary: string | null,
-            //     created_at: string,
-            //     author_display_name: string,
-            //     capture_attachments: [
-            //         {
-            //             id: string,
-            //             s3_url: string,  // Generate presigned URL here
-            //             file_type: string,
-            //             file_name: string
-            //         }
-            //     ]
-            // }
-        ];
+        // Example response structure with proper typing
+        interface CaptureAttachment {
+            id: string;
+            s3_url: string;
+            file_type: string;
+            file_name: string;
+        }
+
+        interface Capture {
+            id: string;
+            capture_type: string;
+            source_url: string | null;
+            page_title: string | null;
+            text_content: string | null;
+            ide_code_diff: string | null;
+            ide_error_log: string | null;
+            ide_file_path: string | null;
+            ai_markdown_summary: string | null;
+            created_at: string;
+            author_display_name: string;
+            capture_attachments: CaptureAttachment[];
+        }
+
+        const captures: Capture[] = [];
+        
+        // When you implement the actual database query, it should return Capture[] type
+        // Example:
+        // const captures = await db.query('SELECT * FROM captures WHERE workspace_id = $1', [workspaceId]);
 
         return NextResponse.json({ captures }, { status: 200 });
     } catch (error) {
