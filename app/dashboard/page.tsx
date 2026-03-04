@@ -71,7 +71,10 @@ export default function DashboardPage() {
             const res = await apiFetch(`${API_BASE}/api/workspaces`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            setWorkspaces(data ?? []);
+            
+            // FIX: Extract the 'workspaces' array from the JSON response
+            setWorkspaces(data.workspaces ?? []);
+            
         } catch (err) {
             if (err instanceof ApiError && err.status === 401) {
                 router.replace('/login');
