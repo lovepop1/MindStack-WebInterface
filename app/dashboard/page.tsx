@@ -67,22 +67,29 @@ export default function DashboardPage() {
     }, [router]);
 
     const fetchWorkspaces = useCallback(async () => {
-        try {
-            const res = await apiFetch(`${API_BASE}/api/workspaces`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            
-            // FIX: Extract the 'workspaces' array from the JSON response
-            setWorkspaces(data.workspaces ?? []);
-            
-        } catch (err) {
-            if (err instanceof ApiError && err.status === 401) {
-                router.replace('/login');
+            try {
+                // FIX: Added { cache: 'no-store' } to bust the Next.js router cache
+                const res = await apiFetch(`${API_BASE}/api/workspaces`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                setWorkspaces(data.workspaces ?? []);
+                
+            } catch (err) {
+                if (err instanceof ApiError && err.status === 401) {
+                    router.replace('/login');
+                }
+            } finally {
+                setWorkspacesLoading(false);
             }
-        } finally {
-            setWorkspacesLoading(false);
-        }
-    }, [router]);
+        }, [router]);
 
     useEffect(() => {
         fetchProjects();
