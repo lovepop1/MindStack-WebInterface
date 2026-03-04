@@ -334,11 +334,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         )}
 
                         {/* AI summary */}
-                        {capture.ai_markdown_summary && (
-                            <div className="markdown-body" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                                <ReactMarkdown>{capture.ai_markdown_summary}</ReactMarkdown>
-                            </div>
-                        )}
+                        
 
                         {/* Source URL */}
                         {capture.source_url && (
