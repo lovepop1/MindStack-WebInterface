@@ -2,7 +2,6 @@
 
 export const dynamic = 'force-dynamic';
 
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -280,7 +279,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                     <div style={{ marginTop: '0.75rem', borderTop: '1px solid #243044', paddingTop: '0.75rem' }}>
                         {/* Code diff — rendered with syntax highlighting */}
                         {isCode && capture.ide_code_diff && (
-                            <div style={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem' }}>
+                            <div style={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem', marginBottom: '0.75rem' }}>
                                 <SyntaxHighlighter
                                     language="diff"
                                     style={vscDarkPlus as Record<string, React.CSSProperties>}
@@ -334,7 +333,73 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         )}
 
                         {/* AI summary */}
-                        
+                        {capture.ai_markdown_summary && (
+                            <div style={{
+                                marginTop: '0.75rem',
+                                padding: '0.875rem',
+                                background: 'rgba(56, 189, 248, 0.05)',
+                                border: '1px solid rgba(56, 189, 248, 0.2)',
+                                borderRadius: '6px'
+                            }}>
+                                <h4 style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 600,
+                                    color: '#38BDF8',
+                                    marginBottom: '0.5rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    fontFamily: 'JetBrains Mono, monospace'
+                                }}>
+                                    ✨ AI Code Analysis
+                                </h4>
+                                <div className="markdown-body" style={{
+                                    fontSize: '0.8rem',
+                                    color: '#E2E8F0',
+                                    lineHeight: 1.6
+                                }}>
+                                    <ReactMarkdown
+                                        components={{
+                                            code({ className, children, ...props }) {
+                                                const match = /language-(\w+)/.exec(className || '');
+                                                const isInline = !className;
+                                                return !isInline && match ? (
+                                                    <SyntaxHighlighter
+                                                        style={vscDarkPlus as Record<string, React.CSSProperties>}
+                                                        language={match[1]}
+                                                        PreTag="div"
+                                                        customStyle={{
+                                                            overflowX: 'auto',
+                                                            borderRadius: '4px',
+                                                            margin: '0.5rem 0',
+                                                            fontSize: '0.75rem',
+                                                            background: '#0A0F1E',
+                                                        }}
+                                                    >
+                                                        {String(children).replace(/\n$/, '')}
+                                                    </SyntaxHighlighter>
+                                                ) : (
+                                                    <code
+                                                        style={{
+                                                            background: 'rgba(56,189,248,0.1)',
+                                                            padding: '0.1em 0.3em',
+                                                            borderRadius: '4px',
+                                                            fontFamily: 'JetBrains Mono, monospace',
+                                                            fontSize: '0.85em',
+                                                            color: '#38BDF8'
+                                                        }}
+                                                        {...props}
+                                                    >
+                                                        {children}
+                                                    </code>
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {capture.ai_markdown_summary}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Source URL */}
                         {capture.source_url && (
