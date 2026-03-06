@@ -4,6 +4,7 @@ MindStack is an advanced, multimodal context engine that captures your web resea
 
 This repository contains the **Next.js Web Interface** for MindStack. It is the central hub where you can view your captured knowledge, manage projects, and interact with the AI assistant through a rich, multimodal chat interface.
 
+
 ---
 
 ## 🌟 The MindStack Ecosystem
