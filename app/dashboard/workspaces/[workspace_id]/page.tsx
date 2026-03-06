@@ -47,23 +47,25 @@ interface Message {
 
 // ───────────────────────────── Helper Components ───────────────────────────
 
-// NEW: Renders rich JSON telemetry smoothly
 const StatPill = ({ icon, label, value }: { icon: string, label: string, value: string | number }) => (
     <div style={{ 
-        background: 'rgba(56,189,248,0.08)', 
-        border: '1px solid rgba(56,189,248,0.15)', 
-        padding: '0.2rem 0.5rem', 
-        borderRadius: '4px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '0.3rem', 
-        fontSize: '0.65rem', 
-        fontFamily: 'JetBrains Mono, monospace' 
+        background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.15)', 
+        padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'flex', alignItems: 'center', 
+        gap: '0.3rem', fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace' 
     }}>
-        <span>{icon}</span>
-        <span style={{ color: '#64748B' }}>{label}:</span>
+        <span>{icon}</span><span style={{ color: '#64748B' }}>{label}:</span>
         <span style={{ color: '#38BDF8', fontWeight: 600 }}>{value}</span>
     </div>
+);
+
+const TagBadge = ({ children }: { children: React.ReactNode }) => (
+    <span style={{
+        background: '#1E293B', border: '1px solid #334155', color: '#CBD5E1',
+        padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.6rem',
+        fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap'
+    }}>
+        {children}
+    </span>
 );
 
 // ───────────────────────────── Capture Card ──────────────────────────────
@@ -77,466 +79,178 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         e.stopPropagation();
         if (deleting) return;
         setDeleting(true);
-        onDelete(capture.id); // optimistic
-        try {
-            await apiFetch(`${API_BASE}/api/captures/${capture.id}`, { method: 'DELETE' });
-        } catch (err) {
-            if (err instanceof ApiError && err.status === 401) router.replace('/login');
-            // Silently fail — already removed optimistically
-        }
+        onDelete(capture.id); 
+        try { await apiFetch(`${API_BASE}/api/captures/${capture.id}`, { method: 'DELETE' }); } 
+        catch (err) { if (err instanceof ApiError && err.status === 401) router.replace('/login'); }
     }
 
-    // UPDATED: Added mapping for the 4 new telemetry events
     const typeColors: Record<string, string> = {
-        WEB_TEXT: '#38BDF8',
-        USER_NOTE: '#A78BFA',
-        IDE_BUG_FIX: '#F43F5E',
-        IDE_PROGRESS_SNAPSHOT: '#F59E0B',
-        VIDEO_SEGMENT: '#10B981',
-        RESOURCE_UPLOAD: '#6366F1',
-        IDE_SESSION_FINAL_SNAPSHOT: '#EAB308',
-        IDE_DEBUG_EPISODE_START: '#EF4444', 
-        IDE_DEBUG_EPISODE_UPDATE: '#F97316',
-        IDE_DEBUG_EPISODE_RESOLVED: '#22C55E',
+        WEB_TEXT: '#38BDF8', USER_NOTE: '#A78BFA', IDE_BUG_FIX: '#F43F5E', IDE_PROGRESS_SNAPSHOT: '#F59E0B',
+        VIDEO_SEGMENT: '#10B981', RESOURCE_UPLOAD: '#6366F1', IDE_SESSION_FINAL_SNAPSHOT: '#EAB308',
+        IDE_DEBUG_EPISODE_START: '#EF4444', IDE_DEBUG_EPISODE_UPDATE: '#F97316', IDE_DEBUG_EPISODE_RESOLVED: '#22C55E',
     };
 
     const typeIcons: Record<string, string> = {
-        WEB_TEXT: '🌐',
-        USER_NOTE: '📝',
-        IDE_BUG_FIX: '🐛',
-        IDE_PROGRESS_SNAPSHOT: '📸',
-        VIDEO_SEGMENT: '🎬',
-        RESOURCE_UPLOAD: '📎',
-        IDE_SESSION_FINAL_SNAPSHOT: '📊',
-        IDE_DEBUG_EPISODE_START: '🚨',
-        IDE_DEBUG_EPISODE_UPDATE: '🛠️',
-        IDE_DEBUG_EPISODE_RESOLVED: '✅',
+        WEB_TEXT: '🌐', USER_NOTE: '📝', IDE_BUG_FIX: '🐛', IDE_PROGRESS_SNAPSHOT: '📸', VIDEO_SEGMENT: '🎬', 
+        RESOURCE_UPLOAD: '📎', IDE_SESSION_FINAL_SNAPSHOT: '📊', IDE_DEBUG_EPISODE_START: '🚨', 
+        IDE_DEBUG_EPISODE_UPDATE: '🛠️', IDE_DEBUG_EPISODE_RESOLVED: '✅',
     };
 
     const typeLabels: Record<string, string> = {
-        WEB_TEXT: 'Web Page',
-        USER_NOTE: 'Note',
-        IDE_BUG_FIX: 'Bug Fix',
-        IDE_PROGRESS_SNAPSHOT: 'Code Snapshot',
-        VIDEO_SEGMENT: 'Video',
-        RESOURCE_UPLOAD: 'File Upload',
-        IDE_SESSION_FINAL_SNAPSHOT: 'Session Summary',
-        IDE_DEBUG_EPISODE_START: 'Bug Hunt Started',
-        IDE_DEBUG_EPISODE_UPDATE: 'Debugging Active',
-        IDE_DEBUG_EPISODE_RESOLVED: 'Bug Resolved',
+        WEB_TEXT: 'Web Page', USER_NOTE: 'Note', IDE_BUG_FIX: 'Bug Fix', IDE_PROGRESS_SNAPSHOT: 'Code Snapshot', 
+        VIDEO_SEGMENT: 'Video', RESOURCE_UPLOAD: 'File Upload', IDE_SESSION_FINAL_SNAPSHOT: 'Session Summary', 
+        IDE_DEBUG_EPISODE_START: 'Bug Hunt Started', IDE_DEBUG_EPISODE_UPDATE: 'Debugging Active', IDE_DEBUG_EPISODE_RESOLVED: 'Bug Resolved',
     };
 
     const color = typeColors[capture.capture_type] ?? '#64748B';
     const icon = typeIcons[capture.capture_type] ?? '📌';
+    const isCode = capture.capture_type.startsWith('IDE_');
     
-    // UPDATED: Ensures syntax highlighter triggers for all IDE events
-    const isCode = capture.capture_type.startsWith('IDE_'); 
+    // Fallback to empty object if no metadata exists
+    const meta = capture.snapshot_metadata || {};
     
     const imageAttachments = capture.capture_attachments?.filter(
         (a) => a.file_type === 'IMAGE' || a.file_type === 'VIDEO_KEYFRAME'
     );
 
     return (
-        <div
-            style={{
-                position: 'relative',
-                paddingLeft: '2.5rem',
-                paddingBottom: '1.5rem',
-            }}
-        >
-            {/* Timeline dot */}
-            <div
-                style={{
-                    position: 'absolute',
-                    left: '0',
-                    top: '0.9rem',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: `${color}20`,
-                    border: `2px solid ${color}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.55rem',
-                    zIndex: 1,
-                }}
-            >
-                {icon}
-            </div>
-
-            {/* Card */}
-            <div
-                onClick={() => setExpanded(!expanded)}
-                style={{
-                    background: '#1C2A3D',
-                    border: `1px solid ${deleting ? '#334155' : '#243044'}`,
-                    borderLeft: `3px solid ${color}`,
-                    borderRadius: '8px',
-                    padding: '0.875rem',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    opacity: deleting ? 0.4 : 1,
-                }}
-                onMouseEnter={(e) => { if (!deleting) e.currentTarget.style.borderColor = color; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#243044'; e.currentTarget.style.borderLeftColor = color; }}
-            >
-                {/* Top row */}
+        <div style={{ position: 'relative', paddingLeft: '2.5rem', paddingBottom: '1.5rem' }}>
+            <div style={{ position: 'absolute', left: '0', top: '0.9rem', width: '20px', height: '20px', borderRadius: '50%', background: `${color}20`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', zIndex: 1 }}>{icon}</div>
+            
+            <div onClick={() => setExpanded(!expanded)} style={{ background: '#1C2A3D', border: `1px solid ${deleting ? '#334155' : '#243044'}`, borderLeft: `3px solid ${color}`, borderRadius: '8px', padding: '0.875rem', cursor: 'pointer', transition: 'border-color 0.2s', opacity: deleting ? 0.4 : 1 }} onMouseEnter={(e) => { if (!deleting) e.currentTarget.style.borderColor = color; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#243044'; e.currentTarget.style.borderLeftColor = color; }}>
+                
+                {/* ── HEADER ── */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                            <span
-                                style={{
-                                    display: 'inline-block',
-                                    fontSize: '0.65rem',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    fontWeight: 600,
-                                    color: color,
-                                    background: `${color}15`,
-                                    border: `1px solid ${color}30`,
-                                    borderRadius: '4px',
-                                    padding: '0.1rem 0.5rem',
-                                    letterSpacing: '0.05em',
-                                }}
-                            >
-                                {typeLabels[capture.capture_type] ?? capture.capture_type}
-                            </span>
-                            
-                            {/* Author attribution badge */}
-                            <span
-                                style={{
-                                    display: 'inline-block',
-                                    fontSize: '0.65rem',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    fontWeight: 500,
-                                    color: '#10B981',
-                                    background: 'rgba(16,185,129,0.1)',
-                                    border: '1px solid rgba(16,185,129,0.2)',
-                                    borderRadius: '4px',
-                                    padding: '0.1rem 0.5rem',
-                                }}
-                            >
-                                👤 {capture.author_display_name}
-                            </span>
+                            <span style={{ display: 'inline-block', fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: color, background: `${color}15`, border: `1px solid ${color}30`, borderRadius: '4px', padding: '0.1rem 0.5rem', letterSpacing: '0.05em' }}>{typeLabels[capture.capture_type] ?? capture.capture_type}</span>
+                            {capture.author_display_name && <span style={{ display: 'inline-block', fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, color: '#10B981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '4px', padding: '0.1rem 0.5rem' }}>👤 {capture.author_display_name}</span>}
                         </div>
 
-                        {/* Title / snippet */}
                         {(capture.page_title || capture.source_url) && (
-                            <p
-                                style={{
-                                    fontSize: '0.8rem',
-                                    color: '#CBD5E1',
-                                    fontWeight: 500,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                }}
-                            >
-                                {capture.page_title ?? capture.source_url}
-                            </p>
+                            <p style={{ fontSize: '0.8rem', color: '#CBD5E1', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capture.page_title ?? capture.source_url}</p>
                         )}
-
+                        
                         {isCode && capture.ide_file_path && (
-                            <p style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>
-                                📄 {capture.ide_file_path}
-                            </p>
+                            <p style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>📄 {capture.ide_file_path}</p>
                         )}
 
-                        {/* Text preview */}
-                        {capture.text_content && (
-                            <p style={{
-                                fontSize: '0.75rem',
-                                color: '#94A3B8',
-                                marginTop: '0.3rem',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                lineHeight: 1.5,
-                            }}>
+                        {/* High-Level Pills (Always Visible) */}
+                        {Object.keys(meta).length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                                {meta.files_changed !== undefined && <StatPill icon="📁" label="Files" value={meta.files_changed} />}
+                                {meta.lines_added !== undefined && <StatPill icon="➕" label="Added" value={meta.lines_added} />}
+                                {meta.lines_removed !== undefined && <StatPill icon="➖" label="Removed" value={meta.lines_removed} />}
+                                {meta.session_duration !== undefined && <StatPill icon="⏱️" label="Duration" value={`${Math.round(meta.session_duration / 60)}m`} />}
+                                {meta.resolved_bugs !== undefined && <StatPill icon="✅" label="Fixed" value={meta.resolved_bugs} />}
+                                {meta.abandoned_bugs !== undefined && meta.abandoned_bugs > 0 && <StatPill icon="⚠️" label="Abandoned" value={meta.abandoned_bugs} />}
+                            </div>
+                        )}
+                        
+                        {capture.text_content && !expanded && (
+                            <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.3rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5 }}>
                                 {capture.text_content.slice(0, 180)}{capture.text_content.length > 180 ? '…' : ''}
                             </p>
                         )}
-
-                        {/* NEW: Render JSON Stats if they exist */}
-                        {capture.snapshot_metadata && (
-                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem' }}>
-                                {capture.snapshot_metadata.files_changed !== undefined && (
-                                    <StatPill icon="📁" label="Files" value={capture.snapshot_metadata.files_changed} />
-                                )}
-                                {capture.snapshot_metadata.lines_added !== undefined && (
-                                    <StatPill icon="📝" label="Lines" value={`+${capture.snapshot_metadata.lines_added} / -${capture.snapshot_metadata.lines_removed}`} />
-                                )}
-                                {capture.snapshot_metadata.session_duration !== undefined && (
-                                    <StatPill icon="⏱️" label="Duration" value={`${Math.round(capture.snapshot_metadata.session_duration / 60)}m`} />
-                                )}
-                                {capture.snapshot_metadata.resolved_bugs !== undefined && (
-                                    <StatPill icon="🐛" label="Fixed" value={capture.snapshot_metadata.resolved_bugs} />
-                                )}
-                            </div>
-                        )}
                     </div>
-
-                    {/* Delete btn */}
-                    <button
-                        id={`delete-capture-${capture.id}`}
-                        onClick={handleDelete}
-                        aria-label="Delete item"
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid transparent',
-                            borderRadius: '6px',
-                            color: '#475569',
-                            cursor: 'pointer',
-                            padding: '0.25rem',
-                            fontSize: '0.9rem',
-                            flexShrink: 0,
-                            transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#F43F5E';
-                            e.currentTarget.style.borderColor = 'rgba(244,63,94,0.3)';
-                            e.currentTarget.style.background = 'rgba(244,63,94,0.08)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.color = '#475569';
-                            e.currentTarget.style.borderColor = 'transparent';
-                            e.currentTarget.style.background = 'transparent';
-                        }}
-                    >
-                        🗑️
-                    </button>
+                    <button onClick={handleDelete} style={{ background: 'transparent', border: 'none', color: '#475569', cursor: 'pointer', padding: '0.25rem', fontSize: '0.9rem' }}>🗑️</button>
                 </div>
 
-                {/* Image attachments */}
                 {imageAttachments && imageAttachments.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
                         {imageAttachments.map((att) => (
-                            <a
-                                key={att.id}
-                                href={att.s3_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                title={att.file_name}
-                                style={{
-                                    display: 'inline-block',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden',
-                                    border: '1px solid #334155',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <img
-                                    src={att.s3_url}
-                                    alt={att.file_name}
-                                    style={{
-                                        width: '160px',
-                                        height: '100px',
-                                        objectFit: 'cover',
-                                        display: 'block',
-                                    }}
-                                    onError={(e) => {
-                                        const img = e.currentTarget;
-                                        img.style.background = '#1E293B';
-                                        img.style.display = 'flex';
-                                        img.alt = '⚠ Unavailable';
-                                    }}
-                                />
+                            <a key={att.id} href={att.s3_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #334155', flexShrink: 0 }}>
+                                <img src={att.s3_url} alt={att.file_name} style={{ width: '160px', height: '100px', objectFit: 'cover', display: 'block' }} />
                             </a>
                         ))}
                     </div>
                 )}
 
-                {/* Expanded content */}
+                {/* ── EXPANDED VIEW: RICH TELEMETRY DASHBOARD ── */}
                 {expanded && (
                     <div style={{ marginTop: '0.75rem', borderTop: '1px solid #243044', paddingTop: '0.75rem' }}>
-                        {/* Code diff */}
+                        
+                        {/* 1. Stacktraces & Text Content */}
+                        {capture.text_content && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Context</p>
+                                <pre style={{ fontSize: '0.78rem', color: '#CBD5E1', background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', margin: 0 }}>{capture.text_content}</pre>
+                            </div>
+                        )}
+                        {meta.initial_stacktrace && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#EF4444', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Stacktrace</p>
+                                <pre style={{ fontSize: '0.72rem', color: '#FCA5A5', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', margin: 0 }}>{meta.initial_stacktrace}</pre>
+                            </div>
+                        )}
+
+                        {/* 2. File & Module Arrays */}
+                        {(meta.languages_detected?.length > 0 || meta.modules_changed?.length > 0) && (
+                            <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {meta.languages_detected?.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>LANGUAGES:</span>
+                                        {meta.languages_detected.map((lang: string) => <TagBadge key={lang}>{lang}</TagBadge>)}
+                                    </div>
+                                )}
+                                {meta.modules_changed?.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>MODULES:</span>
+                                        {meta.modules_changed.map((mod: string) => <TagBadge key={mod}>📁 {mod}</TagBadge>)}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 3. Open Files */}
+                        {meta.open_files?.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Workspace State</p>
+                                <div style={{ background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                    {meta.open_files.map((f: string) => (
+                                        <div key={f} style={{ fontSize: '0.7rem', color: f === meta.active_file ? '#38BDF8' : '#94A3B8', fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            {f === meta.active_file ? '▶' : '📄'} {f} {f === meta.active_file && '(Active)'}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4. Actions Log (Bug Hunt Timeline) */}
+                        {meta.actions_log?.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#F97316', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Bug Hunt Actions</p>
+                                <div style={{ background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    {meta.actions_log.map((action: any, i: number) => (
+                                        <div key={i} style={{ fontSize: '0.7rem', color: '#CBD5E1', fontFamily: 'JetBrains Mono, monospace', display: 'flex', gap: '0.5rem' }}>
+                                            <span style={{ color: '#64748B' }}>[{new Date(action.timestamp || action.time).toLocaleTimeString()}]</span>
+                                            {action.type === 'command' ? <span style={{ color: '#EAB308' }}>$ {action.cmd}</span> : <span style={{ color: '#38BDF8' }}>💾 Saved {action.file}</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. The Code Diff */}
                         {isCode && capture.ide_code_diff && (
                             <div style={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem', marginBottom: '0.75rem' }}>
-                                <SyntaxHighlighter
-                                    language="diff"
-                                    style={vscDarkPlus as Record<string, React.CSSProperties>}
-                                    customStyle={{
-                                        overflowX: 'auto',
-                                        maxWidth: '100%',
-                                        borderRadius: '6px',
-                                        fontSize: '0.75rem',
-                                        margin: 0,
-                                        background: '#0A0F1E',
-                                    }}
-                                    showLineNumbers
-                                    wrapLongLines={false}
-                                >
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Code Changes</p>
+                                <SyntaxHighlighter language="diff" style={vscDarkPlus as Record<string, React.CSSProperties>} customStyle={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem', margin: 0, background: '#0A0F1E' }}>
                                     {capture.ide_code_diff}
                                 </SyntaxHighlighter>
                             </div>
                         )}
 
-                        {/* Text content */}
-                        {capture.text_content && (
-                            <div style={{ marginBottom: '0.5rem' }}>
-                                <p style={{
-                                    fontSize: '0.65rem',
-                                    color: '#64748B',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                    marginBottom: '0.3rem',
-                                }}>
-                                    Content
-                                </p>
-                                <pre style={{
-                                    fontSize: '0.78rem',
-                                    color: '#CBD5E1',
-                                    background: '#0A0F1E',
-                                    border: '1px solid #243044',
-                                    borderRadius: '6px',
-                                    padding: '0.6rem 0.75rem',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
-                                    maxHeight: '200px',
-                                    overflowY: 'auto',
-                                    margin: 0,
-                                    fontFamily: 'inherit',
-                                    lineHeight: 1.6,
-                                }}>
-                                    {capture.text_content}
-                                </pre>
-                            </div>
-                        )}
-
-                        {/* AI summary */}
+                        {/* 6. AI Summary */}
                         {capture.ai_markdown_summary && (
-                            <div style={{
-                                marginTop: '0.75rem',
-                                padding: '0.875rem',
-                                background: 'rgba(56, 189, 248, 0.05)',
-                                border: '1px solid rgba(56, 189, 248, 0.2)',
-                                borderRadius: '6px'
-                            }}>
-                                <h4 style={{
-                                    fontSize: '0.68rem',
-                                    fontWeight: 600,
-                                    color: '#38BDF8',
-                                    marginBottom: '0.5rem',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                    fontFamily: 'JetBrains Mono, monospace'
-                                }}>
-                                    ✨ AI Code Analysis
-                                </h4>
-                                <div className="markdown-body" style={{
-                                    fontSize: '0.8rem',
-                                    color: '#E2E8F0',
-                                    lineHeight: 1.6
-                                }}>
-                                    <ReactMarkdown
-                                        components={{
-                                            img({ src, alt }) {
-                                                return (
-                                                    <a href={src} target="_blank" rel="noopener noreferrer" style={{ display: 'block', margin: '0.75rem 0' }}>
-                                                        <img
-                                                            src={src}
-                                                            alt={alt}
-                                                            style={{
-                                                                maxWidth: '100%',
-                                                                maxHeight: '400px',
-                                                                borderRadius: '8px',
-                                                                border: '1px solid #334155',
-                                                                objectFit: 'contain',
-                                                                backgroundColor: '#0F172A'
-                                                            }}
-                                                        />
-                                                    </a>
-                                                );
-                                            },
-                                            code({ className, children, ...props }) {
-                                                const match = /language-(\w+)/.exec(className || '');
-                                                const isInline = !className;
-                                                return !isInline && match ? (
-                                                    <SyntaxHighlighter
-                                                        style={vscDarkPlus as Record<string, React.CSSProperties>}
-                                                        language={match[1]}
-                                                        PreTag="div"
-                                                        customStyle={{
-                                                            overflowX: 'auto',
-                                                            maxWidth: '100%',
-                                                            borderRadius: '6px',
-                                                            margin: '0.5rem 0',
-                                                            fontSize: '0.82rem',
-                                                        }}
-                                                    >
-                                                        {String(children).replace(/\n$/, '')}
-                                                    </SyntaxHighlighter>
-                                                ) : (
-                                                    <code
-                                                        className={className}
-                                                        style={{
-                                                            background: 'rgba(56,189,248,0.08)',
-                                                            border: '1px solid rgba(56,189,248,0.15)',
-                                                            borderRadius: '4px',
-                                                            padding: '0.1em 0.4em',
-                                                            fontSize: '0.85em',
-                                                            fontFamily: 'JetBrains Mono, monospace',
-                                                        }}
-                                                        {...props}
-                                                    >
-                                                        {children}
-                                                    </code>
-                                                );
-                                            },
-                                            pre({ children }) {
-                                                return (
-                                                    <pre style={{ overflowX: 'auto', maxWidth: '100%', margin: 0 }}>
-                                                        {children}
-                                                    </pre>
-                                                );
-                                            },
-                                        }}
-                                    >
-                                        {capture.ai_markdown_summary}
-                                    </ReactMarkdown>
-                                </div>
+                            <div style={{ marginTop: '0.75rem', padding: '0.875rem', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px' }}>
+                                <h4 style={{ fontSize: '0.68rem', fontWeight: 600, color: '#38BDF8', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>✨ AI Analysis</h4>
+                                <div className="markdown-body" style={{ fontSize: '0.8rem', color: '#E2E8F0', lineHeight: 1.6 }}><ReactMarkdown>{capture.ai_markdown_summary}</ReactMarkdown></div>
                             </div>
-                        )}
-
-                        {/* Source URL */}
-                        {capture.source_url && (
-                            <a
-                                href={capture.source_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                    display: 'block',
-                                    marginTop: '0.5rem',
-                                    fontSize: '0.72rem',
-                                    color: '#38BDF8',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                }}
-                            >
-                                🔗 {capture.source_url}
-                            </a>
                         )}
                     </div>
                 )}
-
-                {/* Timestamp */}
-                <div
-                    style={{
-                        marginTop: '0.4rem',
-                        fontSize: '0.68rem',
-                        color: '#475569',
-                        fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                >
-                    {new Date(capture.created_at).toLocaleString()}
-                </div>
+                <div style={{ marginTop: '0.4rem', fontSize: '0.68rem', color: '#475569', fontFamily: 'JetBrains Mono, monospace' }}>{new Date(capture.created_at).toLocaleString()}</div>
             </div>
         </div>
     );
