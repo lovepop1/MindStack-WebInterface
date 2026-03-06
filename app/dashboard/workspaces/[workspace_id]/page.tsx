@@ -105,33 +105,36 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
     const color = typeColors[capture.capture_type] ?? '#64748B';
     const icon = typeIcons[capture.capture_type] ?? '📌';
     const isCode = capture.capture_type.startsWith('IDE_');
-    
-    // Safely extract payload JSON
     const meta = capture.snapshot_metadata || {};
     
-    // Smart metric handler: files_changed is an Array for Bugs, but a Number for Snapshots
     const filesCount = Array.isArray(meta.files_changed) ? meta.files_changed.length : meta.files_changed;
-    
-    // Prioritize local diff if developer hasn't committed to Git yet
     const diffToShow = meta.local_diff_fix || capture.ide_code_diff;
 
     const imageAttachments = capture.capture_attachments?.filter(
         (a) => a.file_type === 'IMAGE' || a.file_type === 'VIDEO_KEYFRAME'
     );
 
+    // 🚨 NEW: Time formatter for YouTube segments
+    const formatTime = (secs?: number | null) => {
+        if (secs == null) return "0:00";
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const hasVideoPills = capture.video_start_time != null && capture.video_end_time != null;
+    const hasMetaPills = Object.keys(meta).length > 0;
+
     return (
         <div style={{ position: 'relative', paddingLeft: '2.5rem', paddingBottom: '1.5rem' }}>
             <div style={{ position: 'absolute', left: '0', top: '0.9rem', width: '20px', height: '20px', borderRadius: '50%', background: `${color}20`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', zIndex: 1 }}>{icon}</div>
             
-            {/* MAIN CARD WRAPPER - Click to Expand */}
             <div 
                 onClick={() => setExpanded(!expanded)} 
                 style={{ background: '#1C2A3D', border: `1px solid ${deleting ? '#334155' : '#243044'}`, borderLeft: `3px solid ${color}`, borderRadius: '8px', padding: '0.875rem', cursor: 'pointer', transition: 'border-color 0.2s', opacity: deleting ? 0.4 : 1 }} 
                 onMouseEnter={(e) => { if (!deleting) e.currentTarget.style.borderColor = color; }} 
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#243044'; e.currentTarget.style.borderLeftColor = color; }}
             >
-                
-                {/* ── TOP HEADER (Always Visible) ── */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
@@ -143,9 +146,16 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                             <p style={{ fontSize: '0.8rem', color: '#CBD5E1', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capture.page_title ?? capture.source_url}</p>
                         )}
                         
-                        {/* High-Level Telemetry Pills */}
-                        {Object.keys(meta).length > 0 && (
+                        {isCode && capture.ide_file_path && (
+                            <p style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>📄 {capture.ide_file_path}</p>
+                        )}
+
+                        {/* High-Level Telemetry & Video Pills */}
+                        {(hasMetaPills || hasVideoPills) && (
                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                                {/* 🚨 RESTORED: Video Timestamp Pill */}
+                                {hasVideoPills && <StatPill icon="⏱️" label="Segment" value={`${formatTime(capture.video_start_time)} - ${formatTime(capture.video_end_time)}`} />}
+                                
                                 {filesCount !== undefined && <StatPill icon="📁" label="Files" value={filesCount} />}
                                 {meta.lines_added !== undefined && <StatPill icon="➕" label="Added" value={meta.lines_added} />}
                                 {meta.lines_removed !== undefined && <StatPill icon="➖" label="Removed" value={meta.lines_removed} />}
@@ -178,7 +188,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                 {/* ── EXPANDED VIEW: RICH DASHBOARD (Click-Safe Zone) ── */}
                 {expanded && (
                     <div 
-                        onClick={(e) => e.stopPropagation()} // 🚨 MAGIC FIX: Prevents layout collapse when clicking inside!
+                        onClick={(e) => e.stopPropagation()} 
                         style={{ marginTop: '0.75rem', borderTop: '1px solid #243044', paddingTop: '0.75rem', cursor: 'text' }}
                     >
                         
