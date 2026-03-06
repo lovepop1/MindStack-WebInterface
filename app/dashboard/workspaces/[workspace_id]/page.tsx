@@ -36,6 +36,8 @@ interface Capture {
     author_display_name: string;
     capture_attachments: Attachment[];
     snapshot_metadata?: any; // NEW: Added to support rich JSON telemetry
+    video_start_time?: number | null; // 🚨 RESTORED
+    video_end_time?: number | null;   // 🚨 RESTORED
 }
 
 interface Message {
