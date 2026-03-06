@@ -34,6 +34,7 @@ interface Capture {
     ai_markdown_summary: string | null;
     created_at: string;
     capture_attachments: Attachment[];
+    snapshot_metadata?: any; // NEW: Added to support rich JSON telemetry
 }
 
 interface Message {
@@ -42,6 +43,27 @@ interface Message {
     sources?: string[];
     loading?: boolean;
 }
+
+// ───────────────────────────── Helper Components ───────────────────────────
+
+// NEW: Renders rich JSON telemetry smoothly
+const StatPill = ({ icon, label, value }: { icon: string, label: string, value: string | number }) => (
+    <div style={{ 
+        background: 'rgba(56,189,248,0.08)', 
+        border: '1px solid rgba(56,189,248,0.15)', 
+        padding: '0.2rem 0.5rem', 
+        borderRadius: '4px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '0.3rem', 
+        fontSize: '0.65rem', 
+        fontFamily: 'JetBrains Mono, monospace' 
+    }}>
+        <span>{icon}</span>
+        <span style={{ color: '#64748B' }}>{label}:</span>
+        <span style={{ color: '#38BDF8', fontWeight: 600 }}>{value}</span>
+    </div>
+);
 
 // ───────────────────────────── Capture Card ──────────────────────────────
 
@@ -63,6 +85,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         }
     }
 
+    // UPDATED: Added mapping for the 4 new telemetry events
     const typeColors: Record<string, string> = {
         WEB_TEXT: '#38BDF8',
         USER_NOTE: '#A78BFA',
@@ -70,6 +93,10 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         IDE_PROGRESS_SNAPSHOT: '#F59E0B',
         VIDEO_SEGMENT: '#10B981',
         RESOURCE_UPLOAD: '#6366F1',
+        IDE_SESSION_FINAL_SNAPSHOT: '#EAB308',
+        IDE_DEBUG_EPISODE_START: '#EF4444', 
+        IDE_DEBUG_EPISODE_UPDATE: '#F97316',
+        IDE_DEBUG_EPISODE_RESOLVED: '#22C55E',
     };
 
     const typeIcons: Record<string, string> = {
@@ -79,6 +106,10 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         IDE_PROGRESS_SNAPSHOT: '📸',
         VIDEO_SEGMENT: '🎬',
         RESOURCE_UPLOAD: '📎',
+        IDE_SESSION_FINAL_SNAPSHOT: '📊',
+        IDE_DEBUG_EPISODE_START: '🚨',
+        IDE_DEBUG_EPISODE_UPDATE: '🛠️',
+        IDE_DEBUG_EPISODE_RESOLVED: '✅',
     };
 
     const typeLabels: Record<string, string> = {
@@ -88,11 +119,18 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         IDE_PROGRESS_SNAPSHOT: 'Code Snapshot',
         VIDEO_SEGMENT: 'Video',
         RESOURCE_UPLOAD: 'File Upload',
+        IDE_SESSION_FINAL_SNAPSHOT: 'Session Summary',
+        IDE_DEBUG_EPISODE_START: 'Bug Hunt Started',
+        IDE_DEBUG_EPISODE_UPDATE: 'Debugging Active',
+        IDE_DEBUG_EPISODE_RESOLVED: 'Bug Resolved',
     };
 
     const color = typeColors[capture.capture_type] ?? '#64748B';
     const icon = typeIcons[capture.capture_type] ?? '📌';
-    const isCode = capture.capture_type === 'IDE_BUG_FIX' || capture.capture_type === 'IDE_PROGRESS_SNAPSHOT';
+    
+    // UPDATED: Ensures syntax highlighter triggers for all IDE events
+    const isCode = capture.capture_type.startsWith('IDE_'); 
+    
     const imageAttachments = capture.capture_attachments?.filter(
         (a) => a.file_type === 'IMAGE' || a.file_type === 'VIDEO_KEYFRAME'
     );
@@ -185,7 +223,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                             </p>
                         )}
 
-                        {/* Text preview — shown collapsed so user can see what was saved */}
+                        {/* Text preview */}
                         {capture.text_content && (
                             <p style={{
                                 fontSize: '0.75rem',
@@ -196,9 +234,28 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                 WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
                                 lineHeight: 1.5,
+                                whiteSpace: 'pre-wrap',
                             }}>
                                 {capture.text_content.slice(0, 180)}{capture.text_content.length > 180 ? '…' : ''}
                             </p>
+                        )}
+                        
+                        {/* NEW: Render JSON Stats if they exist */}
+                        {capture.snapshot_metadata && (
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem' }}>
+                                {capture.snapshot_metadata.files_changed !== undefined && (
+                                    <StatPill icon="📁" label="Files" value={capture.snapshot_metadata.files_changed} />
+                                )}
+                                {capture.snapshot_metadata.lines_added !== undefined && (
+                                    <StatPill icon="📝" label="Lines" value={`+${capture.snapshot_metadata.lines_added} / -${capture.snapshot_metadata.lines_removed}`} />
+                                )}
+                                {capture.snapshot_metadata.session_duration !== undefined && (
+                                    <StatPill icon="⏱️" label="Duration" value={`${Math.round(capture.snapshot_metadata.session_duration / 60)}m`} />
+                                )}
+                                {capture.snapshot_metadata.resolved_bugs !== undefined && (
+                                    <StatPill icon="🐛" label="Fixed" value={capture.snapshot_metadata.resolved_bugs} />
+                                )}
+                            </div>
                         )}
                     </div>
 
@@ -359,6 +416,24 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                 }}>
                                     <ReactMarkdown
                                         components={{
+                                            img({ src, alt }) {
+                                                return (
+                                                    <a href={src} target="_blank" rel="noopener noreferrer" style={{ display: 'block', margin: '0.75rem 0' }}>
+                                                        <img
+                                                            src={src}
+                                                            alt={alt}
+                                                            style={{
+                                                                maxWidth: '100%',
+                                                                maxHeight: '400px',
+                                                                borderRadius: '8px',
+                                                                border: '1px solid #334155',
+                                                                objectFit: 'contain',
+                                                                backgroundColor: '#0F172A'
+                                                            }}
+                                                        />
+                                                    </a>
+                                                );
+                                            },
                                             code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || '');
                                                 const isInline = !className;
@@ -392,7 +467,14 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                                         {children}
                                                     </code>
                                                 );
-                                            }
+                                            },
+                                            pre({ children }) {
+                                                return (
+                                                    <pre style={{ overflowX: 'auto', maxWidth: '100%', margin: 0 }}>
+                                                        {children}
+                                                    </pre>
+                                                );
+                                            },
                                         }}
                                     >
                                         {capture.ai_markdown_summary}
