@@ -56,7 +56,7 @@ const StatPill = ({ icon, label, value }: { icon: string, label: string, value: 
         gap: '0.3rem', fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace' 
     }}>
         <span>{icon}</span><span style={{ color: '#64748B' }}>{label}:</span>
-        <span style={{ color: '#38BDF8', fontWeight: 600 }}>{value}</span>
+        <span style={{ color: '#10B981', fontWeight: 600 }}>{value}</span>
     </div>
 );
 
