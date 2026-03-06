@@ -106,9 +106,15 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
     const icon = typeIcons[capture.capture_type] ?? '📌';
     const isCode = capture.capture_type.startsWith('IDE_');
     
-    // Fallback to empty object if no metadata exists
+    // Safely extract payload JSON
     const meta = capture.snapshot_metadata || {};
     
+    // Smart metric handler: files_changed is an Array for Bugs, but a Number for Snapshots
+    const filesCount = Array.isArray(meta.files_changed) ? meta.files_changed.length : meta.files_changed;
+    
+    // Prioritize local diff if developer hasn't committed to Git yet
+    const diffToShow = meta.local_diff_fix || capture.ide_code_diff;
+
     const imageAttachments = capture.capture_attachments?.filter(
         (a) => a.file_type === 'IMAGE' || a.file_type === 'VIDEO_KEYFRAME'
     );
@@ -117,9 +123,15 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
         <div style={{ position: 'relative', paddingLeft: '2.5rem', paddingBottom: '1.5rem' }}>
             <div style={{ position: 'absolute', left: '0', top: '0.9rem', width: '20px', height: '20px', borderRadius: '50%', background: `${color}20`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', zIndex: 1 }}>{icon}</div>
             
-            <div onClick={() => setExpanded(!expanded)} style={{ background: '#1C2A3D', border: `1px solid ${deleting ? '#334155' : '#243044'}`, borderLeft: `3px solid ${color}`, borderRadius: '8px', padding: '0.875rem', cursor: 'pointer', transition: 'border-color 0.2s', opacity: deleting ? 0.4 : 1 }} onMouseEnter={(e) => { if (!deleting) e.currentTarget.style.borderColor = color; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#243044'; e.currentTarget.style.borderLeftColor = color; }}>
+            {/* MAIN CARD WRAPPER - Click to Expand */}
+            <div 
+                onClick={() => setExpanded(!expanded)} 
+                style={{ background: '#1C2A3D', border: `1px solid ${deleting ? '#334155' : '#243044'}`, borderLeft: `3px solid ${color}`, borderRadius: '8px', padding: '0.875rem', cursor: 'pointer', transition: 'border-color 0.2s', opacity: deleting ? 0.4 : 1 }} 
+                onMouseEnter={(e) => { if (!deleting) e.currentTarget.style.borderColor = color; }} 
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#243044'; e.currentTarget.style.borderLeftColor = color; }}
+            >
                 
-                {/* ── HEADER ── */}
+                {/* ── TOP HEADER (Always Visible) ── */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
@@ -131,17 +143,14 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                             <p style={{ fontSize: '0.8rem', color: '#CBD5E1', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{capture.page_title ?? capture.source_url}</p>
                         )}
                         
-                        {isCode && capture.ide_file_path && (
-                            <p style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace' }}>📄 {capture.ide_file_path}</p>
-                        )}
-
-                        {/* High-Level Pills (Always Visible) */}
+                        {/* High-Level Telemetry Pills */}
                         {Object.keys(meta).length > 0 && (
                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem', marginBottom: '0.4rem' }}>
-                                {meta.files_changed !== undefined && <StatPill icon="📁" label="Files" value={meta.files_changed} />}
+                                {filesCount !== undefined && <StatPill icon="📁" label="Files" value={filesCount} />}
                                 {meta.lines_added !== undefined && <StatPill icon="➕" label="Added" value={meta.lines_added} />}
                                 {meta.lines_removed !== undefined && <StatPill icon="➖" label="Removed" value={meta.lines_removed} />}
                                 {meta.session_duration !== undefined && <StatPill icon="⏱️" label="Duration" value={`${Math.round(meta.session_duration / 60)}m`} />}
+                                {meta.debug_episodes_count !== undefined && <StatPill icon="🚨" label="Bugs Hit" value={meta.debug_episodes_count} />}
                                 {meta.resolved_bugs !== undefined && <StatPill icon="✅" label="Fixed" value={meta.resolved_bugs} />}
                                 {meta.abandoned_bugs !== undefined && meta.abandoned_bugs > 0 && <StatPill icon="⚠️" label="Abandoned" value={meta.abandoned_bugs} />}
                             </div>
@@ -149,7 +158,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         
                         {capture.text_content && !expanded && (
                             <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.3rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5 }}>
-                                {capture.text_content.slice(0, 180)}{capture.text_content.length > 180 ? '…' : ''}
+                                {capture.text_content}
                             </p>
                         )}
                     </div>
@@ -157,34 +166,54 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                 </div>
 
                 {imageAttachments && imageAttachments.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', cursor: 'auto' }}>
                         {imageAttachments.map((att) => (
-                            <a key={att.id} href={att.s3_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #334155', flexShrink: 0 }}>
+                            <a key={att.id} href={att.s3_url} target="_blank" rel="noopener noreferrer" style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #334155', flexShrink: 0 }}>
                                 <img src={att.s3_url} alt={att.file_name} style={{ width: '160px', height: '100px', objectFit: 'cover', display: 'block' }} />
                             </a>
                         ))}
                     </div>
                 )}
 
-                {/* ── EXPANDED VIEW: RICH TELEMETRY DASHBOARD ── */}
+                {/* ── EXPANDED VIEW: RICH DASHBOARD (Click-Safe Zone) ── */}
                 {expanded && (
-                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #243044', paddingTop: '0.75rem' }}>
+                    <div 
+                        onClick={(e) => e.stopPropagation()} // 🚨 MAGIC FIX: Prevents layout collapse when clicking inside!
+                        style={{ marginTop: '0.75rem', borderTop: '1px solid #243044', paddingTop: '0.75rem', cursor: 'text' }}
+                    >
                         
-                        {/* 1. Stacktraces & Text Content */}
-                        {capture.text_content && (
-                            <div style={{ marginBottom: '1rem' }}>
-                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Context</p>
-                                <pre style={{ fontSize: '0.78rem', color: '#CBD5E1', background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', margin: 0 }}>{capture.text_content}</pre>
-                            </div>
-                        )}
-                        {meta.initial_stacktrace && (
-                            <div style={{ marginBottom: '1rem' }}>
-                                <p style={{ fontSize: '0.65rem', color: '#EF4444', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Stacktrace</p>
-                                <pre style={{ fontSize: '0.72rem', color: '#FCA5A5', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', margin: 0 }}>{meta.initial_stacktrace}</pre>
+                        {/* 1. Bug Context (Errors & Commands) */}
+                        {(meta.initial_command || meta.resolution_command || meta.initial_error_message) && (
+                            <div style={{ marginBottom: '1rem', background: '#0A0F1E', padding: '0.75rem', borderRadius: '6px', border: '1px solid #243044' }}>
+                                {meta.initial_command && (
+                                    <div style={{ fontSize: '0.7rem', color: '#EF4444', fontFamily: 'JetBrains Mono, monospace', marginBottom: '0.4rem' }}>
+                                        🚨 Triggered by: <span style={{ color: '#EAB308' }}>$ {meta.initial_command}</span>
+                                    </div>
+                                )}
+                                {meta.initial_error_message && (
+                                    <div style={{ fontSize: '0.75rem', color: '#FCA5A5', marginBottom: '0.6rem', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                        {meta.initial_error_message}
+                                    </div>
+                                )}
+                                {meta.resolution_command && (
+                                    <div style={{ fontSize: '0.7rem', color: '#22C55E', fontFamily: 'JetBrains Mono, monospace', borderTop: '1px solid #334155', paddingTop: '0.4rem' }}>
+                                        ✅ Resolved with: <span style={{ color: '#EAB308' }}>$ {meta.resolution_command}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* 2. File & Module Arrays */}
+                        {/* 2. File Arrays (Bug Fixes) */}
+                        {Array.isArray(meta.files_changed) && meta.files_changed.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>Files Touched:</span>
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+                                    {meta.files_changed.map((f: string) => <TagBadge key={f}>📄 {f}</TagBadge>)}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. Language & Module Arrays (Snapshots) */}
                         {(meta.languages_detected?.length > 0 || meta.modules_changed?.length > 0) && (
                             <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {meta.languages_detected?.length > 0 && (
@@ -199,20 +228,6 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                         {meta.modules_changed.map((mod: string) => <TagBadge key={mod}>📁 {mod}</TagBadge>)}
                                     </div>
                                 )}
-                            </div>
-                        )}
-
-                        {/* 3. Open Files */}
-                        {meta.open_files?.length > 0 && (
-                            <div style={{ marginBottom: '1rem' }}>
-                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Workspace State</p>
-                                <div style={{ background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                    {meta.open_files.map((f: string) => (
-                                        <div key={f} style={{ fontSize: '0.7rem', color: f === meta.active_file ? '#38BDF8' : '#94A3B8', fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            {f === meta.active_file ? '▶' : '📄'} {f} {f === meta.active_file && '(Active)'}
-                                        </div>
-                                    ))}
-                                </div>
                             </div>
                         )}
 
@@ -231,17 +246,49 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                             </div>
                         )}
 
-                        {/* 5. The Code Diff */}
-                        {isCode && capture.ide_code_diff && (
+                        {/* 5. Open Files (Workspace State) */}
+                        {meta.open_files?.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Workspace Tabs</p>
+                                <div style={{ background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                    {meta.open_files.map((f: string) => (
+                                        <div key={f} style={{ fontSize: '0.7rem', color: f === meta.active_file ? '#38BDF8' : '#94A3B8', fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            {f === meta.active_file ? '▶' : '📄'} {f} {f === meta.active_file && <span style={{color: '#38BDF8', fontSize: '0.6rem'}}>(Active)</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 6. Stacktrace (Raw fallback if no commands) */}
+                        {meta.initial_stacktrace && !meta.initial_error_message && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#EF4444', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Stacktrace</p>
+                                <pre style={{ fontSize: '0.72rem', color: '#FCA5A5', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', margin: 0 }}>{meta.initial_stacktrace}</pre>
+                            </div>
+                        )}
+
+                        {/* 7. The Code Diff */}
+                        {isCode && diffToShow && (
                             <div style={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem', marginBottom: '0.75rem' }}>
-                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Code Changes</p>
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                                    {meta.local_diff_fix ? 'Local Fix Diff' : 'Code Changes'}
+                                </p>
                                 <SyntaxHighlighter language="diff" style={vscDarkPlus as Record<string, React.CSSProperties>} customStyle={{ overflowX: 'auto', borderRadius: '6px', fontSize: '0.75rem', margin: 0, background: '#0A0F1E' }}>
-                                    {capture.ide_code_diff}
+                                    {diffToShow}
                                 </SyntaxHighlighter>
                             </div>
                         )}
 
-                        {/* 6. AI Summary */}
+                        {/* 8. Raw Context (Standard Web / Video Captures) */}
+                        {capture.text_content && !meta.initial_error_message && !capture.text_content.includes('Repo Structure:') && (
+                            <div style={{ marginBottom: '1rem' }}>
+                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Context</p>
+                                <pre style={{ fontSize: '0.78rem', color: '#CBD5E1', background: '#0A0F1E', border: '1px solid #243044', borderRadius: '6px', padding: '0.6rem 0.75rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', margin: 0 }}>{capture.text_content}</pre>
+                            </div>
+                        )}
+
+                        {/* 9. AI Summary */}
                         {capture.ai_markdown_summary && (
                             <div style={{ marginTop: '0.75rem', padding: '0.875rem', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px' }}>
                                 <h4 style={{ fontSize: '0.68rem', fontWeight: 600, color: '#38BDF8', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>✨ AI Analysis</h4>
@@ -250,12 +297,12 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         )}
                     </div>
                 )}
+                
                 <div style={{ marginTop: '0.4rem', fontSize: '0.68rem', color: '#475569', fontFamily: 'JetBrains Mono, monospace' }}>{new Date(capture.created_at).toLocaleString()}</div>
             </div>
         </div>
     );
 }
-
 
 // ─────────────────────────── Chat Message ────────────────────────────────
 
