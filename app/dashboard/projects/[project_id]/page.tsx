@@ -33,6 +33,7 @@ interface Capture {
     ide_file_path: string | null;
     ai_markdown_summary: string | null;
     created_at: string;
+    author_display_name?: string | null;
     capture_attachments: Attachment[];
     snapshot_metadata?: any; // NEW: Added to support rich JSON telemetry
 }
