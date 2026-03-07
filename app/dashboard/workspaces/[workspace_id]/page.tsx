@@ -293,7 +293,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         )}
 
                         {/* 7.5 The Repo Tree */}
-                        {isCode && meta.repo_tree && (
+                        {isCode && (meta.repo_tree || capture.snapshot_metadata?.repo_tree) && (
                             <div style={{ marginBottom: '1rem' }}>
                                 <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
                                     Repository Structure
@@ -310,7 +310,7 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                                     overflowY: 'auto', 
                                     margin: 0 
                                 }}>
-                                    {meta.repo_tree}
+                                    {meta.repo_tree || capture.snapshot_metadata?.repo_tree}
                                 </pre>
                             </div>
                         )}

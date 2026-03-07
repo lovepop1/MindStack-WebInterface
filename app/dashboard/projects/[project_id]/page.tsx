@@ -293,27 +293,27 @@ function CaptureCard({ capture, onDelete }: { capture: Capture; onDelete: (id: s
                         )}
 
                         {/* 7.5 The Repo Tree */}
-                        {isCode && meta.repo_tree && (
-                            <div style={{ marginBottom: '1rem' }}>
-                                <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
-                                    Repository Structure
-                                </p>
-                                <pre style={{ 
-                                    fontSize: '0.72rem', 
-                                    color: '#94A3B8', 
-                                    background: '#0A0F1E', 
-                                    border: '1px solid #243044', 
-                                    borderRadius: '6px', 
-                                    padding: '0.6rem 0.75rem', 
-                                    whiteSpace: 'pre-wrap', 
-                                    maxHeight: '200px', 
-                                    overflowY: 'auto', 
-                                    margin: 0 
-                                }}>
-                                    {meta.repo_tree}
-                                </pre>
-                            </div>
-                        )}
+                            {isCode && (meta.repo_tree || capture.snapshot_metadata?.repo_tree) && (
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <p style={{ fontSize: '0.65rem', color: '#64748B', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                                        Repository Structure
+                                    </p>
+                                    <pre style={{ 
+                                        fontSize: '0.72rem', 
+                                        color: '#94A3B8', 
+                                        background: '#0A0F1E', 
+                                        border: '1px solid #243044', 
+                                        borderRadius: '6px', 
+                                        padding: '0.6rem 0.75rem', 
+                                        whiteSpace: 'pre-wrap', 
+                                        maxHeight: '200px', 
+                                        overflowY: 'auto', 
+                                        margin: 0 
+                                    }}>
+                                        {meta.repo_tree || capture.snapshot_metadata?.repo_tree}
+                                    </pre>
+                                </div>
+                            )}
 
 
                         {/* 8. Raw Context (Standard Web / Video Captures) */}
