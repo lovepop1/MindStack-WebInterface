@@ -2,7 +2,6 @@
 
 export const dynamic = 'force-dynamic';
 
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +10,7 @@ import Link from 'next/link';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [showGhostModal, setShowGhostModal] = useState(false);
+    const [showEditorModal, setShowEditorModal] = useState(false);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data }) => {
@@ -161,25 +161,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     🌐 Browser Assistant
                 </button>
 
-                <a
-                    href="https://marketplace.visualstudio.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {/* Editor Assistant — opens install modal */}
+                <button
+                    id="editor-assistant-btn"
+                    onClick={() => setShowEditorModal(true)}
                     style={{
                         fontSize: '0.8rem',
                         color: '#818CF8',
-                        textDecoration: 'none',
+                        background: 'transparent',
                         border: '1px solid rgba(129,140,248,0.3)',
                         borderRadius: '4px',
                         padding: '0.2rem 0.7rem',
-                        transition: 'all 0.2s',
+                        cursor: 'pointer',
                         fontWeight: 500,
+                        transition: 'all 0.2s',
+                        fontFamily: 'inherit',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLAnchorElement).style.background = 'rgba(129,140,248,0.1)'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLAnchorElement).style.background = 'transparent'; }}
+                    onMouseEnter={(e) => { (e.currentTarget).style.background = 'rgba(129,140,248,0.1)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget).style.background = 'transparent'; }}
                 >
                     ⬡ Editor Assistant
-                </a>
+                </button>
             </div>
 
             <main style={{ flex: 1 }}>{children}</main>
@@ -313,6 +315,153 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     <>Toggle on <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>"Developer mode"</strong> in the top-right corner.</>,
                                     <>Click <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>"Load unpacked"</strong> and select the unzipped folder.</>,
                                     <>Pin the <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>MindStack</strong> icon to your toolbar and log in.</>,
+                                ].map((step, i) => (
+                                    <li key={i} style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6 }}>
+                                        {step}
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Editor Extension Install Modal */}
+            {showEditorModal && (
+                <div
+                    onClick={() => setShowEditorModal(false)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.7)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 200,
+                        padding: '1rem',
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'linear-gradient(160deg, #0D1F35 0%, #111827 100%)',
+                            border: '1px solid #1E3A52',
+                            borderLeft: '4px solid #818CF8', // Purple left border to match theme
+                            borderRadius: '14px',
+                            padding: '2rem',
+                            width: '100%',
+                            maxWidth: '520px',
+                            boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+                            position: 'relative',
+                            animation: 'fadeIn 0.2s ease',
+                        }}
+                    >
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowEditorModal(false)}
+                            aria-label="Close"
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                right: '1rem',
+                                background: 'transparent',
+                                border: '1px solid #1E293B',
+                                borderRadius: '6px',
+                                color: '#475569',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                lineHeight: 1,
+                                padding: '0.25rem 0.45rem',
+                                transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#F1F5F9'; e.currentTarget.style.borderColor = '#334155'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#1E293B'; }}
+                        >
+                            ✕
+                        </button>
+
+                        {/* Heading */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
+                            <span style={{ fontSize: '1.4rem' }}>⬡</span>
+                            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#F1F5F9', margin: 0 }}>
+                                Install the Editor Assistant
+                            </h2>
+                            <span style={{
+                                fontSize: '0.6rem',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                fontWeight: 600,
+                                color: '#818CF8',
+                                background: 'rgba(129,140,248,0.12)',
+                                border: '1px solid rgba(129,140,248,0.3)',
+                                borderRadius: '4px',
+                                padding: '0.1rem 0.5rem',
+                                letterSpacing: '0.05em',
+                            }}>
+                                VS CODE
+                            </span>
+                        </div>
+                        <p style={{ fontSize: '0.82rem', color: '#64748B', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                            MindStack cannot be installed directly from the public marketplace yet. You must install it manually using the provided <code style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.78rem', color: '#94A3B8' }}>.vsix</code> file.
+                        </p>
+
+                        {/* Download button */}
+                        <a
+                            id="modal-download-editor"
+                            href="/mindstack-0.0.5.vsix"
+                            download="mindstack-0.0.5.vsix"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', // Purple gradient
+                                borderRadius: '8px',
+                                color: '#fff',
+                                padding: '0.75rem 1.5rem',
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
+                                marginBottom: '1.5rem',
+                                transition: 'opacity 0.2s, transform 0.15s',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        >
+                            ⬇ Download mindstack-0.0.5.vsix
+                        </a>
+
+                        {/* Install steps */}
+                        <div style={{
+                            background: 'rgba(0,0,0,0.3)',
+                            border: '1px solid #1E3A52',
+                            borderRadius: '8px',
+                            padding: '1rem 1.25rem',
+                        }}>
+                            <p style={{
+                                fontSize: '0.65rem',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                color: '#475569',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.08em',
+                                marginBottom: '0.75rem',
+                            }}>
+                                Installation Steps
+                            </p>
+                            <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                {[
+                                    <>Ensure you have the <code style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.78rem', color: '#818CF8', background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)', borderRadius: '4px', padding: '0.05em 0.4em' }}>mindstack-0.0.5.vsix</code> file.</>,
+                                    <>Open your computer's terminal (iTerm, Mac Terminal, or Windows Command Prompt).</>,
+                                    <>
+                                        <strong style={{ color: '#F43F5E', fontWeight: 600 }}>CRITICAL:</strong> Launch VS Code with the proposed API flag enabled by running: 
+                                        <div style={{ marginTop: '0.4rem', background: '#0F172A', border: '1px solid #1E293B', padding: '0.5rem', borderRadius: '4px', color: '#E2E8F0', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                                            code --enable-proposed-api mindstack.mindstack
+                                        </div>
+                                    </>,
+                                    <>Once VS Code opens, click the <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>Extensions</strong> icon on the left sidebar (or press <kbd style={{ background: '#1E293B', padding: '0.1rem 0.3rem', borderRadius: '4px', fontSize: '0.7rem' }}>Ctrl+Shift+X</kbd>).</>,
+                                    <>Look at the top right of the extensions panel and click the <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>...</strong> (Views and More Actions) button.</>,
+                                    <>Click <strong style={{ color: '#E2E8F0', fontWeight: 600 }}>"Install from VSIX..."</strong> and select your downloaded file.</>,
+                                    <>The MindStack logo will appear in your left Activity Bar!</>,
                                 ].map((step, i) => (
                                     <li key={i} style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6 }}>
                                         {step}
